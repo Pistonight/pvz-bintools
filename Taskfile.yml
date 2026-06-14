@@ -1,0 +1,27 @@
+version: '3'
+
+includes:
+  cargo:
+    taskfile: mono-dev/task/cargo.yaml
+    optional: true
+    internal: true
+
+tasks:
+  install:
+    - rm -rf mono-dev
+    - git clone https://github.com/Pistonight/mono-dev --depth 1
+
+  check:
+    - lisensor
+    - task: cargo:clippy-all
+    - task: cargo:fmt-check
+    - lfmt -c
+
+  fix:
+    - lisensor -f
+    - cargo fmt
+    - lfmt
+
+  test:
+    - cargo test --release
+

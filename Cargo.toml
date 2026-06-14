@@ -1,0 +1,27 @@
+[package]
+name = "pvz-bintools"
+description = "binary tools for PVZ"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[dependencies.cu]
+package = "pistonite-cu"
+version = "0.8.3"
+features = ["cli", "derive", "fs", "json", "coroutine-heavy"]
+
+[dependencies]
+chrono = "0.4.44"
+flate2 = "1.1.9"
+roxmltree = "0.21.1"
+static_assertions = "1.1.0"
+itertools = "0.14.0"
+windows-sys.version = "0.61.2"
+windows-sys.features = [
+    "Win32_Foundation",
+    "Win32_Storage_FileSystem"
+]
+
+[dev-dependencies]
+sha2 = "0.11.0"
+
