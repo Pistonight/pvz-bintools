@@ -1,0 +1,24 @@
+# pvz-bintools
+
+Command line binary tools for PVZ. Currently only supported on Windows (due to the timestamps stored in pak files).
+
+This is useful to automate modding workflows.
+
+## Installation
+The GitHub release has a windows executable built on my machine.
+
+## Usage
+Run in terminal: (does not have a GUI)
+```
+pvz-bintools [COMMAND] [ARGS...]
+```
+
+Currently it has the following tools:
+
+- `pak` - Pack and unpack `.pak` files. This tool can unpack original game assets and pack them back to the exact same bytes
+- `reanim` - Compile `.reanim` to `.reanim.compiled`, also dumping to JSON for inspection
+
+May be added in the future:
+- strings tool
+- resource tool
+- particle compiler
