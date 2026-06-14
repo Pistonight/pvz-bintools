@@ -21,8 +21,10 @@ pvz-bintools [COMMAND] [ARGS...]
 
 Currently it has the following tools:
 
-- `pak` - Pack and unpack `.pak` files. This tool can unpack original game assets and pack them back to the exact same bytes
-- `reanim` - Compile `.reanim` to `.reanim.compiled`, also dumping to JSON for inspection
+- `pakc` - Pack and unpack `.pak` files. This tool can unpack original game assets and pack them back to the exact same bytes
+- `reanimc` - Compile `.reanim` to `.reanim.compiled`, also dumping to JSON for inspection
+
+Run `pvz-bintools COMMAND --help` for detailed usage (for example `pvz-bintools pakc --help`)
 
 May be added in the future:
 - strings tool
