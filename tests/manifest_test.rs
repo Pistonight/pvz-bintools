@@ -27,7 +27,8 @@ fn test_resc_1096() -> cu::Result<()> {
 fn test_manifest(name: &str) -> cu::Result<()> {
     let config = format!("data/resources{name}.yaml");
     let original_xml = format!("data/main{name}/properties/resources.xml");
-    let output_xml = format!("data/main{name}_res_test/resources.xml");
+    let test_dir = format!("data/main{name}_test/resc");
+    let output_xml = format!("{test_dir}/resources.xml");
 
     run_cli(&["pvz-bintools", "resc", &config])?;
 
@@ -37,14 +38,8 @@ fn test_manifest(name: &str) -> cu::Result<()> {
     orig_manifest.sort();
     let our_json = json::stringify_pretty(&our_manifest)?;
     let orig_json = json::stringify_pretty(&orig_manifest)?;
-    cu::fs::write(
-        format!("data/main{name}_res_test/our_resources.json"),
-        our_json,
-    )?;
-    cu::fs::write(
-        format!("data/main{name}_res_test/orig_resources.json"),
-        orig_json,
-    )?;
+    cu::fs::write(format!("{test_dir}/our_resources.json"), our_json)?;
+    cu::fs::write(format!("{test_dir}/orig_resources.json"), orig_json)?;
     if our_manifest != orig_manifest {
         cu::bail!("differences found in {name}");
     }

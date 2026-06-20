@@ -1,6 +1,6 @@
 paths:
   input-directory: main1065
-  output-xml: main1065_res_test/resources.xml
+  output-xml: main1065_test/resc/resources.xml
   output-cpp: xxx
   output-h: xxx
   excludes:

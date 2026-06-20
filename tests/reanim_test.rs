@@ -15,7 +15,7 @@ fn test_reanim_1096() -> cu::Result<()> {
 }
 
 fn test_reanim(name: &str) -> cu::Result<()> {
-    let test_output = format!("data/{name}_reanim_test");
+    let test_output = format!("data/{name}_test/reanimc");
     let unpack = format!("data/{name}");
 
     // the "original_sources" are at <pak>/reanim/*.reanim
