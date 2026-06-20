@@ -8,4 +8,5 @@ pub use config::*;
 mod manifest;
 pub use manifest::*;
 
+mod codegen;
 mod compiler;

@@ -153,7 +153,7 @@ impl ManifestResourceGroup {
         let _ = writeln!(out, r#"<Resources id="{}">"#, self.id);
         for segment in &self.items_with_defaults {
             segment.write_xml(out);
-            let _ = writeln!(out, "");
+            let _ = writeln!(out);
         }
         let _ = writeln!(out, "</Resources>");
     }
@@ -439,7 +439,7 @@ mod tests {
 
         // TITLESCREEN has a flag attribute a8r8g8b8=""
         let titlescreen = find_item(&manifest, "TITLESCREEN").expect("TITLESCREEN should exist");
-        assert_eq!(titlescreen.attr_bool("a8r8g8b8"), true);
+        assert!(titlescreen.attr_bool("a8r8g8b8"));
 
         // a Sound and a Font should parse with the right tag
         let buttonclick = find_item(&manifest, "BUTTONCLICK").expect("BUTTONCLICK should exist");

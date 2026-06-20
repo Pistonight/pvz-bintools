@@ -1,8 +1,7 @@
 paths:
   input-directory: main1096
   output-xml: main1096_test/resc/resources.xml
-  output-cpp: xxx
-  output-h: xxx
+  output-cpp: main1096_test/resc/Resources.cpp
   excludes:
     - glob:compiled/**/*
     - glob:properties/**/*
@@ -28,8 +27,7 @@ paths:
 
 codegen:
   include-prefix-sexy: SexyAppFramework
-  include-prefix: LawnApp
-  namespace: Sexy
+  namespace: Resource1096
 
 
 resource-groups:

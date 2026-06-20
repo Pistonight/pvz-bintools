@@ -220,10 +220,10 @@ fn compile_image_item(
             out_item.set_attr("minsubdivide", "");
         }
         if attrs.rows != 0 && attrs.rows != 1 {
-            out_item.set_attr("rows", &attrs.rows.to_string());
+            out_item.set_attr("rows", attrs.rows.to_string());
         }
         if attrs.cols != 0 && attrs.cols != 1 {
-            out_item.set_attr("cols", &attrs.cols.to_string());
+            out_item.set_attr("cols", attrs.cols.to_string());
         }
         if let Some(alphaimage) = &item.attrs.alphaimage {
             let alphaimage = cu::check!(
@@ -410,7 +410,7 @@ fn compile_item_by_path(
                         );
                     }
                 }
-                let path_attr = compile_path_attribute(path_prefix, &path);
+                let path_attr = compile_path_attribute(path_prefix, path);
                 let id = id
                     .as_ref()
                     .cloned()

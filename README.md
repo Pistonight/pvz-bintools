@@ -23,6 +23,8 @@ Currently it has the following tools:
 
 - `pakc` - Pack and unpack `.pak` files. This tool can unpack original game assets and pack them back to the exact same bytes
 - `reanimc` - Compile `.reanim` to `.reanim.compiled`, also dumping to JSON for inspection
+- `resc` - Generate `resources.xml`, `Resources.cpp` and `Resources.h` from a YAML config. Supports matching files by pattern.
+  - See [src/tool/resc/README.md](./src/tool/resc/README.md)
 
 Run `pvz-bintools COMMAND --help` for detailed usage (for example `pvz-bintools pakc --help`)
 
