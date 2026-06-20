@@ -1,11 +1,13 @@
 paths:
-  input-directory: main1051
-  output-xml: main1051_res_test/resources.xml
+  input-directory: main1096
+  output-xml: main1096_res_test/resources.xml
   output-cpp: xxx
   output-h: xxx
   excludes:
     - glob:compiled/**/*
     - glob:properties/**/*
+    - glob:images/reloaded/**/*
+    - glob:images/_UNUSED/**/*
     # on-disk casing differs from the original manifest; injected as external below
     - glob:images/ProjectilePea.png
     - glob:images/ProjectileSnowPea.png
@@ -18,6 +20,11 @@ paths:
     - glob:reanim/SelectorScreen_Challenges_highlight.png
     - glob:reanim/SelectorScreen_Survival_highlight.png
     - glob:particles/ZombieBobsledHead.png
+    # specific excludes
+    - glob:images/zombatar_navy_rect.png
+    - glob:images/zombatar_next_button_disabled.png
+    - glob:images/zombatar_prev_button_disabled.png
+    - glob:images/zombatar_stone_tablet.png
 
 codegen:
   include-prefix-sexy: SexyAppFramework
@@ -177,6 +184,20 @@ resource-groups:
           - path: plantspeechbubble.png
           - path: waterdrop.png
           - path: whitewater_shadow.png
+          - pattern: glob:acheesements_*
+          - pattern: glob:quickplay_*
+          - path: selectorscreen_achievements_bg
+            id: SELECTORSCREEN_ACHIEVEMENTS_BG
+            external: true
+          - path: Achievements_pedestal
+            id: SELECTORSCREEN_ACHIEVEMENTS_PEDESTAL
+            external: true
+          - path: Achievements_pedestal_press
+            id: SELECTORSCREEN_ACHIEVEMENTS_PEDESTAL_PRESS
+            external: true
+          - path: selector_morewaystoplay_background
+            id: SELECTORSCREEN_MOREWAYSTOPLAY_BG
+            external: true
       - type: Image
         defaults: { path: particles, id-prefix: IMAGE_ }
         items:
@@ -206,8 +227,13 @@ resource-groups:
           - { id: PINATA, path: pinata, external: true, attrs: { cols: 5 } }
           - { path: ZombieFutureGlasses.png, attrs: { cols: 4 } }
           - { path: Dust_puffs.png, attrs: { cols: 3 } }
-          - pattern: glob:ZombieD*
-          - pattern: glob:ZombieB*
+          - pattern: glob:ZombieDigger*
+          - pattern: glob:ZombieDolphin*
+          - pattern: glob:ZombieBalloon*
+          - path: ZombieDancerHead_disco.png
+            id: ZOMBIEDANCERHEAD
+          - path: ZombieBackupDancerHead_disco.png
+            id: ZOMBIEBACKUPDANCERHEAD
           - { id: ZOMBIEBOBSLEDHEAD, path: ZombieBobSledHead, external: true }
           - path: AwardPickupGlow.png
           - { id: POOLSPARKLY, path: poolsparkly, external: true }
@@ -279,8 +305,10 @@ resource-groups:
           - path: Wallnut_body.png
           - path: WinterMelon_projectile.png
           - path: ZenGarden_bugspray_bottle.png
-          - path: Zombie_Jackson_outerarm_hand.png
-          - path: Zombie_Jackson_outerarm_upper2.png
+          - path: Zombie_disco_outerhand.png
+            id: ZOMBIE_DISCO_OUTERARM_HAND
+          - path: Zombie_disco_outerarm_upper_bone.png
+            id: ZOMBIE_DISCO_OUTERARM_UPPER2
           - path: Zombie_balloon_outerarm_upper2.png
           - path: Zombie_bobsled_outerarm_hand.png
           - path: Zombie_bobsled_outerarm_upper2.png
@@ -290,7 +318,10 @@ resource-groups:
           - path: Zombie_bungi_head_scared.png
           - path: Zombie_catapult_basketball.png
           - path: Zombie_catapult_siding_damage.png
-          - path: Zombie_dancer_innerarm_hand.png
+          - path: Zombie_backup_innerhand.png
+            id: ZOMBIE_BACKUP_INNERARM_HAND
+          - path: Zombie_backup_outerarm_upper_bone.png
+            id: ZOMBIE_BACKUP_OUTERARM_UPPER2
           - path: Zombie_digger_outerarm_upper2.png
           - path: Zombie_digger_pickaxe.png
           - path: Zombie_dolphinrider_outerarm_upper2.png
@@ -329,6 +360,9 @@ resource-groups:
           - { id: COIN_SILVER_DOLLAR, path: Coin_silver_dollar, external: true }
           - { id: PUMPKIN_DAMAGE1, path: Pumpkin_damage1, external: true }
           - path: zombie_football_leftarm_upper2.png
+          - path: SelectorScreen_Woodsign3_press
+            id: SELECTORSCREEN_WOODSIGN3_PRESS
+            external: true
     
   - name: LoadingSounds
     contents:
@@ -532,3 +566,17 @@ resource-groups:
             attrs:
               alphagrid: Credits_ZombieNote.png
           - path: Credits_PlayButton.png
+
+  - name: DelayLoad_Zombatar
+    contents:
+      - type: Image
+        defaults: { path: images, id-prefix: IMAGE_ }
+        items:
+          - path: zombatar_fhair_button.png
+            id: ZOMBATAR_FACIAL_HAIR_BUTTON
+          - path: zombatar_fhair_button_highlight.png
+            id: ZOMBATAR_FACIAL_HAIR_BUTTON_HIGHLIGHT
+          - path: zombatar_fhair_button_over.png
+            id: ZOMBATAR_FACIAL_HAIR_BUTTON_OVER
+          - pattern: regex:zombatar_.*[^_]\.png
+      

@@ -8,7 +8,7 @@ use cu::pre::*;
 use roxmltree::{Document, Node};
 
 /// Structure for the manifest file
-#[derive(Debug, Default, PartialEq, Serialize)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize)]
 pub struct Manifest {
     pub resource_groups: Vec<ManifestResourceGroup>,
 }
@@ -76,9 +76,18 @@ impl Manifest {
         }
         let _ = writeln!(out, "\n</ResourceManifest>");
     }
+
+    /// Sort the manifest to be comparable
+    pub fn sort(&mut self) {
+        for group in &mut self.resource_groups {
+            group.sort()
+        }
+        // sort_by_key does not allow reference
+        self.resource_groups.sort_by(|a, b| a.id.cmp(&b.id));
+    }
 }
 
-#[derive(Debug, PartialEq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct ManifestResourceGroup {
     pub id: String,
     pub items_with_defaults: Vec<ManifestItemsWithDefault>,
@@ -148,9 +157,15 @@ impl ManifestResourceGroup {
         }
         let _ = writeln!(out, "</Resources>");
     }
+
+    pub fn sort(&mut self) {
+        for items in &mut self.items_with_defaults {
+            items.sort();
+        }
+    }
 }
 
-#[derive(Debug, PartialEq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct ManifestItemsWithDefault {
     pub set_defaults: Option<ManifestSetDefaults>,
     pub items: Vec<ManifestItem>,
@@ -215,9 +230,15 @@ impl ManifestItemsWithDefault {
             item.write_xml(out);
         }
     }
+
+    pub fn sort(&mut self) {
+        // weird lifetime issue when trying to use sort_by_key
+        self.items
+            .sort_by(|a, b| (a.tag, &a.id).cmp(&(b.tag, &b.id)))
+    }
 }
 
-#[derive(Debug, PartialEq, Serialize)]
+#[derive(Debug, Default, Clone, PartialEq, Serialize)]
 pub struct ManifestSetDefaults {
     pub path: String,
     pub idprefix: String,
@@ -252,7 +273,7 @@ pub struct ManifestItemRef<'a> {
     pub item: &'a ManifestItem,
 }
 
-#[derive(Debug, PartialEq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct ManifestItem {
     pub tag: ManifestItemTag,
     pub id: String, // in raw, this is the xml to write
@@ -345,7 +366,7 @@ impl ManifestItem {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize)]
 pub enum ManifestItemTag {
     Raw,
     Image,

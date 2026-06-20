@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (c) 2026 Pistonight/pvz-bintools contributors
+
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
 
@@ -17,6 +20,7 @@ static FONT_EXTENSIONS: [&str; 2] = [".txt", ".ttf"];
 
 pub fn compile(config: &Config) -> cu::Result<Manifest> {
     let mut entries = cu::check!(read_entries(config), "failed to read input directory")?;
+    cu::trace!("all entries: {entries:#?}");
     let all_paths = entries.clone();
     let mut id_to_paths = Default::default();
 
@@ -41,12 +45,13 @@ fn read_entries(config: &Config) -> cu::Result<BTreeSet<String>> {
         };
         for p in &config.paths.excludes {
             if p.matches(&id) {
+                cu::debug!("excluded directory {id}");
                 return false;
             }
         }
         true
     })?;
-    while let Some(entry) = walk.next() {
+    'outer: while let Some(entry) = walk.next() {
         let entry = entry?;
         let path = entry.rel_path();
         let norm_path = cu::check!(
@@ -54,6 +59,13 @@ fn read_entries(config: &Config) -> cu::Result<BTreeSet<String>> {
             "failed to normalize entry path: '{}'",
             path.display()
         )?;
+
+        for p in &config.paths.excludes {
+            if p.matches(&norm_path) {
+                cu::debug!("excluded {norm_path}");
+                continue 'outer;
+            }
+        }
         paths.insert(norm_path);
     }
     Ok(paths)
@@ -349,6 +361,15 @@ fn compile_item_by_path(
     filter_extensions: &[&str],
 ) -> cu::Result<Vec<ManifestItem>> {
     let mut out = vec![];
+    let id_prefix = content_group_common
+        .defaults
+        .as_ref()
+        .map(|x| x.id_prefix.as_str())
+        .unwrap_or_default();
+    let path_prefix = content_group_common
+        .defaults
+        .as_ref()
+        .map(|x| x.path.as_str());
     match item_path {
         Config_item_path::Raw { raw } => {
             return Ok(vec![ManifestItem::raw(raw.to_owned())]);
@@ -359,21 +380,18 @@ fn compile_item_by_path(
                     id.as_ref(),
                     "id must be specified when external (path={path})"
                 )?;
+                let full_id = format!("{id_prefix}{id}");
                 if let Some(existing_path) =
-                    id_to_paths.insert(id.to_string(), format!("external:{path}"))
+                    id_to_paths.insert(full_id.clone(), format!("external:{path}"))
                 {
                     cu::bail!(
-                        "id conflict: {id} previously has path '{existing_path}', adding 'external:{path}'"
+                        "id conflict: {full_id} previously has path '{existing_path}', adding 'external:{path}'"
                     );
                 }
                 let item = ManifestItem::new(tag, id.to_string(), path.to_string());
                 out.push(item);
             } else {
-                let prefix = content_group_common
-                    .defaults
-                    .as_ref()
-                    .map(|x| x.path.as_str());
-                let full_path = match prefix {
+                let full_path = match path_prefix {
                     Some(prefix) => format!("{prefix}/{path}"),
                     None => path.to_string(),
                 };
@@ -392,14 +410,16 @@ fn compile_item_by_path(
                         );
                     }
                 }
-                let path_attr = compile_path_attribute(prefix, &path);
+                let path_attr = compile_path_attribute(path_prefix, &path);
                 let id = id
                     .as_ref()
                     .cloned()
                     .unwrap_or_else(|| path_to_id(path_attr));
-                if let Some(existing_path) = id_to_paths.insert(id.clone(), full_path.clone()) {
+                let full_id = format!("{id_prefix}{id}");
+                if let Some(existing_path) = id_to_paths.insert(full_id.clone(), full_path.clone())
+                {
                     cu::bail!(
-                        "id conflict: {id} previously has path '{existing_path}', adding '{full_path}'"
+                        "id conflict: {full_id} previously has path '{existing_path}', adding '{full_path}'"
                     );
                 }
                 let item = ManifestItem::new(tag, id, path_attr.to_string());
@@ -407,14 +427,11 @@ fn compile_item_by_path(
             }
         }
         Config_item_path::Pattern { pattern } => {
-            let prefix = content_group_common
-                .defaults
-                .as_ref()
-                .map(|x| x.path.as_str());
-            let matched_paths = match_paths(paths, prefix, pattern, filter_extensions);
+            let matched_paths = match_paths(paths, path_prefix, pattern, filter_extensions);
             if matched_paths.is_empty() {
                 let mut retry_no_filter_paths = paths.clone();
-                let matched_paths2 = match_paths(&mut retry_no_filter_paths, prefix, pattern, &[]);
+                let matched_paths2 =
+                    match_paths(&mut retry_no_filter_paths, path_prefix, pattern, &[]);
                 if !matched_paths2.is_empty() {
                     cu::warn!(
                         "pattern '{pattern}' matched other files with unsupported extensions for {}",
@@ -423,7 +440,7 @@ fn compile_item_by_path(
                 }
                 let mut all_paths = all_paths.clone();
                 let matched_paths3 =
-                    match_paths(&mut all_paths, prefix, pattern, filter_extensions);
+                    match_paths(&mut all_paths, path_prefix, pattern, filter_extensions);
                 if !matched_paths3.is_empty() {
                     cu::warn!(
                         "pattern '{pattern}' matched but all matched files have been used. Each file can only be matched with one pattern."
@@ -432,11 +449,12 @@ fn compile_item_by_path(
                 cu::bail!("pattern '{}' matched no {} items", pattern, tag.to_str());
             }
             for path in matched_paths {
-                let path_attr = compile_path_attribute(prefix, &path);
+                let path_attr = compile_path_attribute(path_prefix, &path);
                 let id = path_to_id(path_attr);
-                if let Some(existing_path) = id_to_paths.insert(id.clone(), path.clone()) {
+                let full_id = format!("{id_prefix}{id}");
+                if let Some(existing_path) = id_to_paths.insert(full_id.clone(), path.clone()) {
                     cu::bail!(
-                        "id conflict: {id} previously has path '{existing_path}', adding '{path}' (matched from pattern)"
+                        "id conflict: {full_id} previously has path '{existing_path}', adding '{path}' (matched from pattern)"
                     );
                 }
                 let item = ManifestItem::new(tag, id, path_attr.to_string());
