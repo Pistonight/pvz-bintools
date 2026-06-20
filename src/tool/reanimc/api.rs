@@ -6,10 +6,13 @@ use std::collections::btree_map::Entry;
 use std::ffi::{OsStr, OsString};
 use std::io::{Read as _, Write as _};
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 
 use cu::pre::*;
 
+use crate::tool::reanimc::check::Checker;
 use crate::tool::reanimc::{data, xml};
+use crate::tool::resc::Manifest;
 
 #[derive(Debug, clap::Parser, AsRef)]
 pub struct Cli {
@@ -32,6 +35,21 @@ pub struct Cli {
     /// name.
     #[clap(short, long)]
     pub output: Option<String>,
+
+    /// Optional path to resources.xml for checking the references in the reanim files
+    #[clap(short, long, conflicts_with = "dump")]
+    pub manifest: Option<String>,
+
+    /// Optional path to unpacked pak directory, to include IMAGE_REANIM_ and IMAGE_ ids that are
+    /// inferred
+    ///
+    /// IMAGE_REANIM_ scans reanim/ and images/ whereas IMAGE_ scans particles/
+    #[clap(short, long, conflicts_with = "dump")]
+    pub pak_dir: Option<String>,
+
+    /// Run without producing output files (e.g. just for checking against manifest)
+    #[clap(short, long, conflicts_with = "output", conflicts_with = "dump")]
+    pub no_emit: bool,
 
     #[clap(flatten)]
     #[as_ref]
@@ -206,7 +224,22 @@ pub fn run(cli: Cli) -> cu::Result<()> {
     if cli.dump {
         return dump(inputs, cli.ptr);
     }
-    compile(inputs)
+    let mut checker = Checker::default();
+    if let Some(manifest) = cli.manifest {
+        let manifest_xml = cu::check!(
+            cu::fs::read_string(manifest),
+            "failed to read manifest file"
+        )?;
+        let manifest = Manifest::try_parse_xml(&manifest_xml)?;
+        checker.load_from_manifest(&manifest);
+    }
+    if let Some(pak_dir) = cli.pak_dir {
+        cu::check!(
+            checker.load_from_pak_dir(pak_dir.as_ref()),
+            "failed to load image entries from pak dir"
+        )?;
+    }
+    compile(inputs, checker, !cli.no_emit)
 }
 
 pub fn dump(inputs: Inputs, show_ptr: bool) -> cu::Result<()> {
@@ -238,20 +271,25 @@ pub fn dump(inputs: Inputs, show_ptr: bool) -> cu::Result<()> {
     Ok(())
 }
 
-pub fn compile(inputs: Inputs) -> cu::Result<()> {
+pub fn compile(inputs: Inputs, checker: Checker, emit: bool) -> cu::Result<()> {
     match inputs {
         Inputs::Stdout(bytes) => {
             let xml_src = xml::format_document(&bytes)?;
             let document = xml::ReanimDocument::parse_xml(&xml_src)?;
-            let stream = document.parse()?.compile()?;
-            let mut stdout = std::io::stdout();
-            cu::check!(stream.write(&mut stdout), "failed to write to stdout")?;
-            cu::check!(stdout.flush(), "failed to flush to stdout")?;
+            let mut definition = document.parse()?;
+            cu::check!(checker.check_definition(&definition), "check failed")?;
+            let stream = definition.compile()?;
+            if emit {
+                let mut stdout = std::io::stdout();
+                cu::check!(stream.write(&mut stdout), "failed to write to stdout")?;
+                cu::check!(stdout.flush(), "failed to flush to stdout")?;
+            }
             cu::lv::disable_print_time();
         }
         Inputs::Files(files) => {
             // compiling is a bit slow (on my machine takes 3 seconds to compile all from the
             // original main.pak), so parallelize to get free perf
+            let checker = Arc::new(checker);
             cu::co::run(async move {
                 let len = files.len();
                 let mut handles = Vec::with_capacity(len);
@@ -262,15 +300,22 @@ pub fn compile(inputs: Inputs) -> cu::Result<()> {
                         .map(|x| format!("'{}'", x.display()))
                         .unwrap_or("<stdin>".into());
                     cu::debug!("compiling {input_path}");
+                    let checker = checker.clone();
                     let handle = pool.spawn_blocking(move || {
                         let stream = (|| {
                             let xml_src = xml::format_document(&input.bytes)?;
                             let document = xml::ReanimDocument::parse_xml(&xml_src)?;
-                            let stream = document.parse()?.compile()?;
+                            let mut definition = document.parse()?;
+                            cu::check!(
+                                checker.check_definition(&definition),
+                                "check failed for '{input_path}'"
+                            )?;
+                            let stream = definition.compile()?;
                             cu::Ok(stream)
                         })();
+
                         let stream =
-                            cu::check!(stream, "failed to parse input file: '{input_path}'")?;
+                            cu::check!(stream, "failed to compile input file: '{input_path}'")?;
                         cu::Ok((stream, output_path))
                     });
                     handles.push(handle);
@@ -278,9 +323,11 @@ pub fn compile(inputs: Inputs) -> cu::Result<()> {
                 let mut set = cu::co::set(handles);
                 while let Some(result) = set.next().await {
                     let (stream, output_path) = result???;
-                    let mut writer = cu::fs::writer(output_path)?;
-                    stream.write(&mut writer)?;
-                    writer.flush()?;
+                    if emit {
+                        let mut writer = cu::fs::writer(output_path)?;
+                        stream.write(&mut writer)?;
+                        writer.flush()?;
+                    }
                 }
                 if len > 1 {
                     cu::info!("compiled {len} files");

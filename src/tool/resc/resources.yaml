@@ -1,0 +1,51 @@
+paths:
+  input-directory: xxx
+  output-xml: xxx
+  output-cpp: xxx
+  output-h: xxx
+  excludes:
+    - glob pattern
+
+codegen:
+  include-prefix-sexy: SexyAppFramework
+  include-prefix: LawnApp
+  namespace: Sexy
+
+
+resource-groups:
+  - name: Init
+    contents:
+      - type: Image # Font, Sound
+        defaults:
+          path: images
+          id-prefix: IMAGE_
+        attrs: # image only
+          nopal: true
+          ddsurface: true
+          a4r4g4b4: true
+          a8r8g8b8: true
+          rows: x
+          cols: x
+          #fonts:
+          bold: true
+          italic: true
+          shadow: true
+          underline: true
+          sys: true # sysfont instead of image font
+                    # currently needs to be at fonts/ (not in pak)
+        items:
+          - id: BKG
+            path: backdrop
+            attrs: # overrides above
+              alphaimage: path
+            external: true
+          - glob: "*.png"
+            # ID will be filestem -> convert anything not alphanumeric to _ -> upper
+            attrs:
+              alphaimage: '[name]_alpha.png'
+        
+  - name: LoadingThread
+
+ 
+
+

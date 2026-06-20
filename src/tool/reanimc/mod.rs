@@ -2,5 +2,6 @@
 // Copyright (c) 2026 Pistonight/pvz-bintools contributors
 
 pub mod api;
+mod check;
 mod data;
 mod xml;

@@ -25,14 +25,11 @@ fn test_pak_repack_1096() -> cu::Result<()> {
 
 fn test_pak_repack(name: &str) -> cu::Result<()> {
     let original = format!("data/{name}.pak");
-    let directory = format!("data/{name}_repack");
+    let directory = format!("data/{name}");
     let repack = format!("data/{name}_repack.pak");
 
     // read data/<name>.pak and compute sha256
     let original_hash = sha256_file(&original)?;
-
-    // run unpack CLI (using Cli::parse_from)
-    run_cli(&["pvz-bintools", "pakc", "--unpack", &original, &directory])?;
 
     // run pack CLI to a new file : data/<name>_repack.pak
     run_cli(&["pvz-bintools", "pakc", "--pack", &repack, &directory])?;
@@ -54,7 +51,7 @@ fn run_cli(args: &[&str]) -> cu::Result<()> {
 }
 
 fn sha256_file(path: &str) -> cu::Result<String> {
-    let bytes = cu::check!(std::fs::read(path), "failed to read '{path}'")?;
+    let bytes = cu::fs::read(path)?;
     let mut hasher = Sha256::new();
     hasher.update(&bytes);
     Ok(digest_to_hex(&hasher.finalize()))

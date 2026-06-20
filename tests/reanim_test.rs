@@ -15,27 +15,19 @@ fn test_reanim_1096() -> cu::Result<()> {
 }
 
 fn test_reanim(name: &str) -> cu::Result<()> {
-    let base = format!("data/{name}_reanim_test");
-    let unpack = format!("{base}/unpack");
-    let test_output = format!("{base}/test_output");
+    let test_output = format!("data/{name}_reanim_test");
+    let unpack = format!("data/{name}");
 
-    // unpack data/<name>.pak to data/<name>_reanim_test/unpack
-    run_cli(&[
-        "pvz-bintools",
-        "pakc",
-        "--unpack",
-        &format!("data/{name}.pak"),
-        &unpack,
-    ])?;
-
-    // the "original_sources" are at <...>/unpack/reanim/*.reanim
+    // the "original_sources" are at <pak>/reanim/*.reanim
     let original_sources = format!("{unpack}/reanim/*.reanim");
-    // the "original_compiled" are at <...>/unpack/compiled/reanim/*.reanim.compiled
+    // the "original_compiled" are at <pak>/compiled/reanim/*.reanim.compiled
     let original_compiled = format!("{unpack}/compiled/reanim/*.reanim.compiled");
 
     let our_compiled = format!("{test_output}/our_compiled");
     let orig_dump = format!("{test_output}/orig_dump");
     let our_dump = format!("{test_output}/our_dump");
+
+    let manifest = format!("{unpack}/properties/resources.xml");
 
     // compile original using our compiler
     run_cli(&[
@@ -44,6 +36,10 @@ fn test_reanim(name: &str) -> cu::Result<()> {
         &original_sources,
         "-o",
         &our_compiled,
+        "--manifest",
+        &manifest,
+        "--pak-dir",
+        &unpack,
     ])?;
 
     // dump original

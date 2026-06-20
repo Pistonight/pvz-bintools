@@ -506,18 +506,21 @@ impl ReanimTransform<'_, '_> {
                 r##""image": {}"##,
                 json::stringify(&self.strings.image)?
             );
+            has_trail = false;
         }
         if !self.strings.font.is_empty() {
             if !has_trail {
                 out.push_str(", ");
             }
             let _ = write!(out, r##""font": {}"##, json::stringify(&self.strings.font)?);
+            has_trail = false;
         }
         if !self.strings.text.is_empty() {
             if !has_trail {
                 out.push_str(", ");
             }
             let _ = write!(out, r##""text": {}"##, json::stringify(&self.strings.text)?);
+            // has_trail = false;
         }
         out.push_str(" }");
         Ok(())

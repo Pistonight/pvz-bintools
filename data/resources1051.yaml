@@ -1,0 +1,112 @@
+paths:
+  input-directory: main1051
+  output-xml: main1051_res_test/resources.xml
+  output-cpp: xxx
+  output-h: xxx
+  excludes:
+    - glob:compiled/**/*
+    - glob:properties/**/*
+
+codegen:
+  include-prefix-sexy: SexyAppFramework
+  include-prefix: LawnApp
+  namespace: Sexy
+
+
+resource-groups:
+  - name: Init
+    contents:
+      - type: Image
+        defaults: { path: images, id-prefix: IMAGE_ }
+        items:
+          - { id: BLANK, path: blank, external: true }
+          - path: PopCap_Logo.jpg
+      - type: Image
+        defaults:
+          path: properties
+          id-prefix: IMAGE_
+        items:
+          - { id: PARTNER_LOGO, path: partner_logo, external: true }
+  - name: LoaderBar
+    contents:
+      - type: Image
+        defaults: { path: images, id-prefix: IMAGE_ }
+        items:
+          - path: titlescreen.jpg
+            attrs: 
+              a8r8g8b8: true
+          - pattern: glob:LoadBar_*.png
+          - path: PvZ_Logo.jpg
+      - type: Image
+        defaults: { path: reanim, id-prefix: IMAGE_REANIM_ }
+        items:
+          - path: SodRollCap.png
+      - type: Font
+        defaults: { path: data, id-prefix: FONT_ }
+        items:
+          - path: BrianneTod16.txt
+      - type: Sound
+        defaults: { path: sounds, id-prefix: SOUND_ }
+        items:
+          - path: buttonclick.ogg
+          - pattern: glob:loadingbar_*
+  - name: LoadingFonts
+    contents:
+      - type: Font
+        defaults: { path: data, id-prefix: FONT_ }
+        items:
+          - raw: '  <Image id="IMAGE_HOUSEOFTERROR28" path="houseofterror28" />'
+          - pattern: regex:^HouseofTerror\d\d\.txt
+          - path: Pix118Bold.txt
+            id: TINYBOLD
+          - path: ContinuumBold14.txt
+          - path: ContinuumBold14Outback.txt
+            id: CONTINUUMBOLD14OUTLINE
+            external: true # we are case-sensitive so it needs to be outback.txt
+          - pattern: glob:DwarvenTodcraft*
+          - path: Pico129.txt
+          - path: BrianneTod12.txt
+
+  - name: LoadingImages
+    contents:
+      - type: Image
+        defaults: { path: images, id-prefix: IMAGE_ }
+        items:
+          - path: editbox.gif
+          - pattern: glob:dialog_*
+          - pattern: glob:button_*
+      - type: Image
+        defaults: { path: images, id-prefix: IMAGE_ }
+        items:
+          - pattern: glob:SeedChooser_*
+          # - pattern: glob:dialog_*
+          # - pattern: glob:button_*
+
+  - name: DelayLoad_Credits
+    contents:
+      - type: Font
+        defaults: { path: data, id-prefix: FONT_ }
+        items:
+          - pattern: glob:B*
+      - type: Image
+        defaults: { path: reanim, id-prefix: IMAGE_REANIM_ }
+        items:
+          - pattern: glob:SunFlower_head_*
+          - path: Credits_DiscoLights.png
+          - path: Credits_fogmachine.png
+      - type: Image
+        defaults: { path: images, id-prefix: IMAGE_ }
+        items:
+          - path: Credits_ZombieNoteBlack.png
+            id: CREDITS_ZOMBIENOTE
+            attrs:
+              alphagrid: Credits_ZombieNote.png
+          - path: Credits_PlayButton.png
+        
+
+# <Resources id="DelayLoad_Credits">
+#   <SetDefaults path="images" idprefix="IMAGE_" />
+#   <Image id="CREDITS_ZOMBIENOTE" path="Credits_ZombieNoteBlack" alphagrid="Credits_ZombieNote" />
+#   <Image id="CREDITS_PLAYBUTTON" path="Credits_PlayButton" />
+# </Resources>
+#

@@ -3,7 +3,7 @@
 
 use cu::pre::*;
 
-use crate::tool::{pakc, reanimc};
+use crate::tool::{pakc, reanimc, resc};
 
 /// Binary tools for PVZ
 #[derive(clap::Parser, AsRef)]
@@ -35,6 +35,8 @@ pub enum CliCommand {
     Pakc(pakc::api::Cli),
     /// .reanim tool
     Reanimc(reanimc::api::Cli),
+    /// resource tool
+    Resc(resc::api::Cli),
 }
 
 impl AsRef<cu::cli::Flags> for CliCommand {
@@ -42,6 +44,7 @@ impl AsRef<cu::cli::Flags> for CliCommand {
         match self {
             CliCommand::Pakc(cli) => cli.as_ref(),
             CliCommand::Reanimc(cli) => cli.as_ref(),
+            CliCommand::Resc(cli) => cli.as_ref(),
         }
     }
 }
@@ -60,5 +63,6 @@ pub fn run(cli: Cli) -> cu::Result<()> {
     match cmd {
         CliCommand::Pakc(cli) => pakc::api::run(cli),
         CliCommand::Reanimc(cli) => reanimc::api::run(cli),
+        CliCommand::Resc(cli) => resc::api::run(cli),
     }
 }

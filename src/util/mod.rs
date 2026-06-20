@@ -3,3 +3,5 @@
 
 mod stream;
 pub use stream::*;
+mod pattern;
+pub use pattern::*;

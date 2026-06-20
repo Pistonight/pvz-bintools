@@ -6,3 +6,6 @@ pub mod pakc;
 
 /// .reanim compiler
 pub mod reanimc;
+
+/// resources compiler
+pub mod resc;

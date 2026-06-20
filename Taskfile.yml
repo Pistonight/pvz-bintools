@@ -23,5 +23,35 @@ tasks:
     - lfmt
 
   test:
-    - cargo test --release
+    cmds:
+      - cargo build --release
+      - task: _unpack
+      - cargo test --release
+
+  _unpack:
+    internal: true
+    deps:
+      - _unpack_1051
+      - _unpack_1065
+      - _unpack_1073
+      - _unpack_1096
+  _unpack_1051:
+    internal: true
+    cmds:
+      - target/release/pvz-bintools pakc --unpack data/main1051.pak
+  _unpack_1065:
+    internal: true
+    cmds:
+      - target/release/pvz-bintools pakc --unpack data/main1065.pak
+  _unpack_1073:
+    internal: true
+    cmds:
+      - target/release/pvz-bintools pakc --unpack data/main1073.pak
+  _unpack_1096:
+    internal: true
+    cmds:
+      - target/release/pvz-bintools pakc --unpack data/main1096.pak
+
+  clean:
+    - rm -f data/*_repack.pak
 
