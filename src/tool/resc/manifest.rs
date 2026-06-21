@@ -158,6 +158,19 @@ impl ManifestResourceGroup {
         let _ = writeln!(out, "</Resources>");
     }
 
+    pub fn is_empty(&self) -> bool {
+        for items in &self.items_with_defaults {
+            if !items.is_empty() {
+                return false;
+            }
+        }
+        true
+    }
+
+    pub fn len(&self) -> usize {
+        self.items_with_defaults.iter().map(|x| x.len()).sum()
+    }
+
     pub fn sort(&mut self) {
         for items in &mut self.items_with_defaults {
             items.sort();
@@ -192,6 +205,14 @@ impl ManifestItemsWithDefault {
             set_defaults,
             items,
         })
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.items.is_empty()
+    }
+
+    pub fn len(&self) -> usize {
+        self.items.len()
     }
 
     pub fn iter(&self) -> impl Iterator<Item = ManifestItemRef<'_>> {

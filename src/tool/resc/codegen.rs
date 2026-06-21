@@ -3,6 +3,8 @@
 
 use std::fmt::Write as _;
 
+use cu::pre::*;
+
 use crate::tool::resc::{Manifest, ManifestItemTag};
 
 #[derive(Default)]
@@ -34,7 +36,10 @@ pub fn generate(manifest: &Manifest, config: &CodegenConfig) -> cu::Result<Codeg
         header_include,
     } = config;
 
-    let ids = collect_resources(manifest);
+    let ids = cu::check!(
+        collect_ids(manifest),
+        "there are invalid IDs in the manifest"
+    )?;
 
     let _ = writeln!(out.source, "{HEADER}");
     let _ = writeln!(out.header, "{HEADER}");
@@ -48,26 +53,56 @@ pub fn generate(manifest: &Manifest, config: &CodegenConfig) -> cu::Result<Codeg
     let _ = writeln!(out.header, "namespace {namespace} {{ ");
 
     // includes
+    let _ = writeln!(out.source, "#include <atomic>");
+    let _ = writeln!(out.source, "#include <cstdint>");
+    let _ = writeln!(out.source, "#include <mutex>");
+    let _ = writeln!(out.source, "#include <unordered_map>");
     if header_include.is_empty() {
         let _ = writeln!(out.source, "#include \"{header_name}\"");
     } else {
-        let _ = writeln!(out.source, "#include <{header_include}/{header_name}>");
+        if header_include.starts_with('.') {
+            let _ = writeln!(out.source, "#include \"{header_include}/{header_name}\"");
+        } else {
+            let _ = writeln!(out.source, "#include <{header_include}/{header_name}>");
+        }
     }
-    let _ = writeln!(out.source, "#include <{sexy_include}/ResourceManager.h>");
+    if sexy_include.starts_with('.') {
+        let _ = writeln!(out.source, "#include \"{sexy_include}/ResourceManager.h\"");
+    } else {
+        let _ = writeln!(out.source, "#include <{sexy_include}/ResourceManager.h>");
+    }
 
     let _ = writeln!(out.source, "namespace {namespace} {{ ");
 
     // idmap
-    let _ = writeln!(out.source, "// resource id -> pointer");
     let _ = writeln!(out.source, "static void* gResources[] = {{");
     let _ = writeln!(out.header, "// resource ids");
     let _ = writeln!(out.header, "enum class ResourceId {{");
+    // FONT -> IMAGE -> SOUND
+    let mut stage = "";
+    let mut prev = "";
     for id in &ids {
         let _ = writeln!(out.source, "    &{id},");
-        let _ = writeln!(out.header, "    {id}_ID,");
+        if stage.is_empty() || !id.starts_with(stage) {
+            if !prev.is_empty() {
+                let _ = writeln!(out.header, "    _{stage}LAST = {prev}_ID,");
+            }
+            stage = match stage {
+                "" => "FONT_",
+                "FONT_" => "IMAGE_",
+                "IMAGE_" => "SOUND_",
+                _ => cu::bail!("invalid id stage: '{stage}'"),
+            };
+            let _ = writeln!(out.header, "    {id}_ID,");
+            let _ = writeln!(out.header, "    _{stage}FIRST = {id}_ID,");
+        } else {
+            let _ = writeln!(out.header, "    {id}_ID,");
+        }
+        prev = id;
     }
     let _ = writeln!(out.source, "    nullptr");
     let _ = writeln!(out.source, "}};");
+    let _ = writeln!(out.header, "    _{stage}LAST = {prev}_ID,");
     let _ = writeln!(out.header, "    LENGTH");
     let _ = writeln!(out.header, "}};");
 
@@ -76,15 +111,18 @@ pub fn generate(manifest: &Manifest, config: &CodegenConfig) -> cu::Result<Codeg
         out.header,
         "Sexy::Image* LoadImageById(Sexy::ResourceManager* manager, ResourceId id);"
     );
-    let _ = writeln!(
-        out.header,
-        "void ReplaceImageById(Sexy::ResourceManager* manager, ResourceId id, Sexy::Image* image);"
-    );
+    // we deliberately don't generate ReplaceImageById, it stores a random pointer
+    // globally that could be freed anytime which easily causes UAF if not careful
     let _ = writeln!(out.header, "Sexy::Image* GetImageById(ResourceId id);");
     let _ = writeln!(out.header, "Sexy::Font* GetFontById(ResourceId id);");
     let _ = writeln!(out.header, "int GetSoundById(ResourceId id);");
+    let _ = writeln!(
+        out.header,
+        "ResourceId GetIdByImage(Sexy::Image* theImage);"
+    );
+    let _ = writeln!(out.header, "ResourceId GetIdByFont(Sexy::Font* theFont);");
+    let _ = writeln!(out.header, "ResourceId GetIdBySound(int theSound);");
     // we deliberately don't generate GetRef functions since they are foot guns
-    // we deliberately don't generate GetId functions since they are foot guns
     let _ = writeln!(out.header, "const char* IdToString(ResourceId id);");
     // we deliberately don't generate IdFromString since it's foot gun
     for line in include_str!("impl.cpp").lines() {
@@ -104,6 +142,14 @@ pub fn generate(manifest: &Manifest, config: &CodegenConfig) -> cu::Result<Codeg
 
     // extractor for each group
     for group in &manifest.resource_groups {
+        if group.is_empty() {
+            let _ = writeln!(
+                out.header,
+                "inline bool Extract{}Resources(Sexy::ResourceManager*) {{ return true; }}",
+                group.id
+            );
+            continue;
+        }
         let _ = writeln!(
             out.header,
             "bool Extract{}Resources(Sexy::ResourceManager* theMgr);",
@@ -170,12 +216,41 @@ pub fn generate(manifest: &Manifest, config: &CodegenConfig) -> cu::Result<Codeg
     Ok(out)
 }
 
-fn collect_resources(manifest: &Manifest) -> Vec<String> {
+fn collect_ids(manifest: &Manifest) -> cu::Result<Vec<String>> {
     let mut ids = vec![];
     for group in &manifest.resource_groups {
         for item in group.iter() {
-            ids.push(item.full_id);
+            let full_id = item.full_id;
+            let tag = item.item.tag;
+            if full_id.starts_with("IMAGE_") {
+                if tag != ManifestItemTag::Image {
+                    cu::bail!(
+                        "invalid entry: expect item ID={full_id} to be an Image, got {}",
+                        tag.to_str()
+                    );
+                }
+            } else if full_id.starts_with("FONT_") {
+                if tag != ManifestItemTag::Font {
+                    cu::bail!(
+                        "invalid entry: expect item ID={full_id} to be a Font, got {}",
+                        tag.to_str()
+                    );
+                }
+            } else if full_id.starts_with("SOUND_") {
+                if tag != ManifestItemTag::Sound {
+                    cu::bail!(
+                        "invalid entry: expect item ID={full_id} to be a Sound, got {}",
+                        tag.to_str()
+                    );
+                }
+            } else {
+                cu::bail!(
+                    "invalid entry: item ID={full_id}; ID must start with IMAGE_, FONT_ or SOUND_"
+                );
+            }
+            ids.push(full_id);
         }
     }
-    ids
+    ids.sort();
+    Ok(ids)
 }

@@ -4,6 +4,7 @@
 use std::path::{Path, PathBuf};
 
 use cu::pre::*;
+use itertools::Itertools as _;
 
 use crate::tool::resc::codegen::{self, CodegenConfig};
 use crate::tool::resc::{Config, Manifest, compiler};
@@ -47,12 +48,7 @@ pub fn run(cli: Cli) -> cu::Result<()> {
     let manifest = cu::check!(compiler::compile(&config), "failed to compile config")?;
     let xml = manifest.to_xml();
 
-    cu::check!(
-        cu::fs::write(&config.paths.output_xml, &xml),
-        "failed to write resources xml manifest"
-    )?;
-    let output_xml_display = PathBuf::from(config.paths.output_xml);
-    cu::info!("written {}", output_xml_display.try_to_rel().display());
+    write_if_changed(config.paths.output_xml.as_ref(), &xml)?;
 
     // must re-parse XML to get the raw tags
     let mut manifest = cu::check!(
@@ -102,18 +98,27 @@ pub fn run(cli: Cli) -> cu::Result<()> {
         codegen::generate(&manifest, &codegen_config),
         "codegen failed"
     )?;
-    cu::check!(
-        cu::fs::write(output_cpp, &generated_code.source),
-        "failed to write output cpp source"
-    )?;
-    let output_display = Path::new(output_cpp).try_to_rel();
-    cu::info!("written {}", output_display.display());
-    cu::check!(
-        cu::fs::write(&output_h, &generated_code.header),
-        "failed to write output cpp header"
-    )?;
-    let output_display = Path::new(&output_h).try_to_rel();
-    cu::info!("written {}", output_display.display());
 
+    write_if_changed(output_cpp.as_ref(), &generated_code.source)?;
+    write_if_changed(output_h.as_ref(), &generated_code.header)?;
+
+    Ok(())
+}
+
+fn write_if_changed(path: &Path, new_content: &str) -> cu::Result<()> {
+    let mut new_normalized = new_content.lines().join("\n");
+    if let Ok(current) = cu::fs::read_string(path) {
+        // we have clang-format off but git/other program could still change line end
+        let current_normalized = current.lines().join("\n");
+        if current_normalized == new_normalized {
+            cu::info!("up-to-date: {}", path.try_to_rel().display());
+            return Ok(());
+        }
+    }
+    if !new_normalized.ends_with('\n') {
+        new_normalized.push('\n');
+    }
+    cu::fs::write(path, new_normalized)?;
+    cu::info!("written {}", path.try_to_rel().display());
     Ok(())
 }

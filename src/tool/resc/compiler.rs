@@ -235,25 +235,33 @@ fn compile_image_item(
             out_item.set_attr("cols", attrs.cols.to_string());
         }
         if let Some(alphaimage) = &item.attrs.alphaimage {
-            let alphaimage = cu::check!(
-                find_image(prefix, paths, &out_item.path, alphaimage),
-                "failed to find alphaimage for ID: {} (path={})",
-                out_item.id,
-                out_item.path
-            )?;
-            if let Some(alphaimage) = alphaimage {
+            if matches!(&item.path, Config_item_path::Exact { external: true, .. }) {
                 out_item.set_attr("alphaimage", alphaimage);
+            } else {
+                let alphaimage = cu::check!(
+                    find_image(prefix, paths, &out_item.path, alphaimage),
+                    "failed to find alphaimage for ID: {} (path={})",
+                    out_item.id,
+                    out_item.path
+                )?;
+                if let Some(alphaimage) = alphaimage {
+                    out_item.set_attr("alphaimage", alphaimage);
+                }
             }
         }
         if let Some(alphagrid) = &item.attrs.alphagrid {
-            let alphagrid = cu::check!(
-                find_image(prefix, paths, &out_item.path, alphagrid),
-                "failed to find alphagrid for ID: {} (path={})",
-                out_item.id,
-                out_item.path
-            )?;
-            if let Some(alphagrid) = alphagrid {
+            if matches!(&item.path, Config_item_path::Exact { external: true, .. }) {
                 out_item.set_attr("alphagrid", alphagrid);
+            } else {
+                let alphagrid = cu::check!(
+                    find_image(prefix, paths, &out_item.path, alphagrid),
+                    "failed to find alphagrid for ID: {} (path={})",
+                    out_item.id,
+                    out_item.path
+                )?;
+                if let Some(alphagrid) = alphagrid {
+                    out_item.set_attr("alphagrid", alphagrid);
+                }
             }
         }
     }

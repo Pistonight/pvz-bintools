@@ -1,7 +1,7 @@
 [package]
 name = "pvz-bintools"
 description = "binary tools for PVZ"
-version = "0.1.3"
+version = "0.1.4"
 edition = "2024"
 publish = false
 
