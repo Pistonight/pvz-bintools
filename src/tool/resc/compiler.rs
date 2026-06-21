@@ -37,38 +37,47 @@ pub fn compile(config: &Config) -> cu::Result<Manifest> {
 }
 
 fn read_entries(config: &Config) -> cu::Result<BTreeSet<String>> {
-    let mut paths = BTreeSet::new();
-    let mut walk = cu::fs::walk_with(&config.paths.input_directory, |entry: &WalkEntry| {
-        let path = entry.rel_path();
-        let Ok(id) = normalize_entry(&path) else {
-            return false;
-        };
-        for p in &config.paths.excludes {
-            if p.matches(&id) {
-                cu::debug!("excluded directory {id}");
+    let mut allpaths = BTreeSet::new();
+    for input_directory in &config.paths.input_directories {
+        cu::info!("processing resource directory: {input_directory}");
+        let mut current_paths = BTreeSet::new();
+        let mut walk = cu::fs::walk_with(input_directory, |entry: &WalkEntry| {
+            let path = entry.rel_path();
+            let Ok(id) = normalize_entry(&path) else {
                 return false;
+            };
+            for p in &config.paths.excludes {
+                if p.matches(&id) {
+                    cu::debug!("excluded directory {id}");
+                    return false;
+                }
             }
-        }
-        true
-    })?;
-    'outer: while let Some(entry) = walk.next() {
-        let entry = entry?;
-        let path = entry.rel_path();
-        let norm_path = cu::check!(
-            normalize_entry(&path),
-            "failed to normalize entry path: '{}'",
-            path.display()
-        )?;
+            true
+        })?;
+        'outer: while let Some(entry) = walk.next() {
+            let entry = entry?;
+            let path = entry.rel_path();
+            let norm_path = cu::check!(
+                normalize_entry(&path),
+                "failed to normalize entry path: '{}'",
+                path.display()
+            )?;
 
-        for p in &config.paths.excludes {
-            if p.matches(&norm_path) {
-                cu::debug!("excluded {norm_path}");
-                continue 'outer;
+            for p in &config.paths.excludes {
+                if p.matches(&norm_path) {
+                    cu::debug!("excluded {norm_path}");
+                    continue 'outer;
+                }
             }
+            current_paths.insert(norm_path);
         }
-        paths.insert(norm_path);
+
+        for p in allpaths.intersection(&current_paths) {
+            cu::warn!("resource appears in multiple input directories: {p}");
+        }
+        allpaths.extend(current_paths);
     }
-    Ok(paths)
+    Ok(allpaths)
 }
 
 fn normalize_entry(rel: &Path) -> cu::Result<String> {

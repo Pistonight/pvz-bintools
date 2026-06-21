@@ -25,8 +25,10 @@ The input and output options are also baked into the same config:
 ```yaml
 # input and output options
 paths:
-  input-directory: path/to/unpacked/pak
-    # ^ the pak directory to look for resources
+  input-directories:
+    - path/to/unpacked/pak
+    # ^ the pak directories to look for resources
+    #   multiple is supported if you want to have multiple paks
   output-xml: path/to/unpacked/pak/properties/resources.xml
     # ^ the place to write the output XML manifest
   output-cpp: path/to/src/Resources.cpp

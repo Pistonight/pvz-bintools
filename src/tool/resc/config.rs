@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (c) 2026 Pistonight/pvz-bintools contributors
 
+use std::path::Path;
+
 use cu::pre::*;
 
 use crate::util::Pattern;
@@ -19,7 +21,7 @@ pub struct Config {
 #[serde(rename_all = "kebab-case")]
 pub struct Config_paths {
     /// Input directory to discover the resources
-    pub input_directory: String,
+    pub input_directories: Vec<String>,
 
     /// Output location for resources.xml
     ///
@@ -39,6 +41,21 @@ pub struct Config_paths {
     /// match, the directory will be skipped entirely
     #[serde(default)]
     pub excludes: Vec<Pattern>,
+}
+
+impl Config_paths {
+    /// Resolve the paths in config relative to a containing dir
+    pub fn prepend_containing_dir(&mut self, dir: &Path) -> cu::Result<()> {
+        for d in &mut self.input_directories {
+            *d = dir.join(&*d).into_utf8()?;
+        }
+        self.output_xml = dir.join(&self.output_xml).into_utf8()?;
+        self.output_cpp = dir.join(&self.output_cpp).into_utf8()?;
+        if let Some(output_h) = self.output_h.as_mut() {
+            *output_h = dir.join(&*output_h).into_utf8()?;
+        }
+        Ok(())
+    }
 }
 
 #[allow(non_camel_case_types)]

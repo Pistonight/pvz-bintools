@@ -120,7 +120,12 @@ pub fn unpack(input: &str, output: &str, keep: bool) -> cu::Result<()> {
         }
     }
 
-    cu::info!("unpacked {} files", pack.len());
+    let input_display = Path::new(input).try_to_rel();
+    cu::info!(
+        "unpacked {} files from {}",
+        pack.len(),
+        input_display.display()
+    );
     Ok(())
 }
 
@@ -142,6 +147,7 @@ pub fn pack(input: &str, output: &str) -> cu::Result<()> {
         pak::write(input, file_list.iter(), Path::new(output)),
         "failed to create .pak file"
     )?;
-    cu::info!("packed {count} files");
+    let output_display = Path::new(output).try_to_rel();
+    cu::info!("packed {} files to {}", count, output_display.display());
     Ok(())
 }

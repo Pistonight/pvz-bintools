@@ -42,24 +42,17 @@ pub fn run(cli: Cli) -> cu::Result<()> {
     }
 
     let mut config = cu::check!(yaml::parse::<Config>(&input), "failed to parse config")?;
-    // fix config paths
-    config.paths.input_directory = containing_dir
-        .join(&config.paths.input_directory)
-        .into_utf8()?;
-    config.paths.output_xml = containing_dir.join(&config.paths.output_xml).into_utf8()?;
-    config.paths.output_cpp = containing_dir.join(&config.paths.output_cpp).into_utf8()?;
-    if let Some(output_h) = config.paths.output_h.as_mut() {
-        *output_h = containing_dir.join(&*output_h).into_utf8()?;
-    }
+    config.paths.prepend_containing_dir(&containing_dir)?;
 
     let manifest = cu::check!(compiler::compile(&config), "failed to compile config")?;
     let xml = manifest.to_xml();
 
     cu::check!(
-        cu::fs::write(config.paths.output_xml, &xml),
+        cu::fs::write(&config.paths.output_xml, &xml),
         "failed to write resources xml manifest"
     )?;
-    cu::info!("written resources xml");
+    let output_xml_display = PathBuf::from(config.paths.output_xml);
+    cu::info!("written {}", output_xml_display.try_to_rel().display());
 
     // must re-parse XML to get the raw tags
     let mut manifest = cu::check!(
@@ -113,12 +106,14 @@ pub fn run(cli: Cli) -> cu::Result<()> {
         cu::fs::write(output_cpp, &generated_code.source),
         "failed to write output cpp source"
     )?;
-    cu::info!("written cpp source");
+    let output_display = Path::new(output_cpp).try_to_rel();
+    cu::info!("written {}", output_display.display());
     cu::check!(
-        cu::fs::write(output_h, &generated_code.header),
+        cu::fs::write(&output_h, &generated_code.header),
         "failed to write output cpp header"
     )?;
-    cu::info!("written cpp header");
+    let output_display = Path::new(&output_h).try_to_rel();
+    cu::info!("written {}", output_display.display());
 
     Ok(())
 }
